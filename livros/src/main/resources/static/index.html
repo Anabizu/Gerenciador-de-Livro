@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📚 Livro Manager</title>
+  <style>
+    body { font-family: sans-serif; background: #fef9f4; padding: 20px; }
+    h1 { color: #d66ba0; }
+    form, section { margin-bottom: 30px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 1px 1px 5px #ccc; }
+    label { display: block; margin-top: 10px; }
+    input, button { padding: 6px; margin-top: 5px; width: 100%; }
+    .result { white-space: pre-wrap; background: #f0f0f0; padding: 10px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>📚 Livro Manager</h1>
+
+  <!-- Buscar por ISBN -->
+  <section>
+    <h2>🔍 Buscar Livro por ISBN</h2>
+    <input type="text" id="isbnSearch" placeholder="Digite o ISBN">
+    <button onclick="buscarPorISBN()">Buscar</button>
+    <div id="resultadoISBN" class="result"></div>
+  </section>
+
+  <!-- Buscar por título -->
+  <section>
+    <h2>🔍 Buscar Livro por Título</h2>
+    <input type="text" id="tituloSearch" placeholder="Digite o título">
+    <button onclick="buscarPorTitulo()">Buscar</button>
+    <div id="resultadoTitulo" class="result"></div>
+  </section>
+
+  <!-- Adicionar livro -->
+  <section>
+    <h2>➕ Incluir Novo Livro</h2>
+    <form id="formAdd">
+      <label>ISBN: <input type="text" id="addIsbn"></label>
+      <label>Título: <input type="text" id="addTitulo"></label>
+      <label>Autor: <input type="text" id="addAutor"></label>
+      <label>Edição: <input type="number" id="addEdicao"></label>
+      <label>Data de Lançamento: <input type="date" id="addData"></label>
+      <label>Preço: <input type="number" step="0.01" id="addPreco"></label>
+      <button type="button" onclick="incluirLivro()">Adicionar</button>
+    </form>
+    <div id="resultadoAdd" class="result"></div>
+  </section>
+
+  <!-- Atualizar livro -->
+  <section>
+    <h2>✏️ Alterar Livro</h2>
+    <form id="formUpdate">
+      <label>ISBN do livro que será alterado: <input type="text" id="updateIsbnTarget"></label>
+      <label>Novo ISBN: <input type="text" id="updateIsbn"></label>
+      <label>Novo Título: <input type="text" id="updateTitulo"></label>
+      <label>Novo Autor: <input type="text" id="updateAutor"></label>
+      <label>Nova Edição: <input type="number" id="updateEdicao"></label>
+      <label>Nova Data de Lançamento: <input type="date" id="updateData"></label>
+      <label>Novo Preço: <input type="number" step="0.01" id="updatePreco"></label>
+      <button type="button" onclick="alterarLivro()">Alterar</button>
+    </form>
+    <div id="resultadoUpdate" class="result"></div>
+  </section>
+
+  <!-- Excluir livro -->
+  <section>
+    <h2>❌ Excluir Livro por ISBN</h2>
+    <input type="text" id="deleteIsbn" placeholder="Digite o ISBN para excluir">
+    <button onclick="excluirLivro()">Excluir</button>
+    <div id="resultadoDelete" class="result"></div>
+  </section>
+
+  <!-- Povoar -->
+  <section>
+    <h2>🌱 Povoar Livros</h2>
+    <button onclick="povoar()">Povoar Base</button>
+    <div id="resultadoPovoar" class="result"></div>
+  </section>
+
+  <script>
+    const baseUrl = "http://localhost:8081/livros";
+
+    function buscarPorISBN() {
+      let isbn = document.getElementById("isbnSearch").value;
+      if (isbn.length !== 13 || !/^\d+$/.test(isbn)) {
+        document.getElementById("resultadoISBN").textContent = "ISBN inválido (devem ser 13 números)";
+      return;
+      }
+      fetch(`${baseUrl}/isbn/${isbn}`)
+      .then(res => {
+      if (!res.ok) {
+        if (res.status === 400 || res.status === 404) {
+          throw new Error("Livro não encontrado");
+        }else {
+          throw new Error("Internal server error");
+        }
+      }
+      return res.json();
+      })
+      .then(data => {
+        const output = `
+        <strong>Título:</strong> ${data.titulo}<br>
+        <strong>Autor:</strong> ${data.autor}<br>
+        <strong>ISBN:</strong> ${data.isbn}<br>
+        <strong>Edição:</strong> ${data.edicao}<br>
+        <strong>Data de Lançamento:</strong> ${data.dataLancamento}<br>
+        <strong>Preço:</strong> R$ ${data.preco.toFixed(2).replace(".", ",")}
+        `;
+        document.getElementById("resultadoISBN").innerHTML = output;
+      })
+      .catch(err => {
+        document.getElementById("resultadoISBN").textContent = err.message;
+      });
+    }
+
+    function buscarPorTitulo() {
+      const titulo = document.getElementById("tituloSearch").value;
+      fetch(`${baseUrl}/titulo/${titulo}`)
+      .then(res => {
+        if (!res.ok) {
+          if (res.status === 404) {
+            throw new Error("Livro não encontrado");
+          } else {
+            throw new Error("Internal server error");
+          }
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (!Array.isArray(data)) {
+          data = [data];
+        }
+        const output = data.map(livro => `
+        <div style="margin-bottom: 15px;">
+          <strong>Título:</strong> ${livro.titulo}<br>
+          <strong>Autor:</strong> ${livro.autor}<br>
+          <strong>ISBN:</strong> ${livro.isbn}<br>
+          <strong>Edição:</strong> ${livro.edicao}<br>
+          <strong>Data de Lançamento:</strong> ${livro.dataLancamento}<br>
+          <strong>Preço:</strong> R$ ${livro.preco.toFixed(2).replace(".", ",")}
+        </div>
+        `).join("");
+
+        document.getElementById("resultadoTitulo").innerHTML = output;
+      })
+      .catch(err => {
+        document.getElementById("resultadoTitulo").textContent = err.message;
+      });
+    }
+
+    function incluirLivro() {
+      const livro = {
+        isbn: document.getElementById("addIsbn").value,
+        titulo: document.getElementById("addTitulo").value,
+        autor: document.getElementById("addAutor").value,
+        edicao: parseInt(document.getElementById("addEdicao").value),
+        dataLancamento: document.getElementById("addData").value,
+        preco: parseFloat(document.getElementById("addPreco").value)
+      };
+      fetch(baseUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(livro)
+      })
+      .then(res => {
+        return res.text().then(text => {
+          if (!res.ok) {
+            throw new Error(text);
+          }
+          return text;
+        });
+      })
+      .then(msg => {
+        document.getElementById("resultadoAdd").textContent = msg;
+      })
+      .catch(err => {
+        document.getElementById("resultadoAdd").textContent = err.message;
+      });
+    }
+
+    function alterarLivro() {
+      const isbnAlvo = document.getElementById("updateIsbnTarget").value;
+      const livroAtualizado = {
+        isbn: document.getElementById("updateIsbn").value,
+        titulo: document.getElementById("updateTitulo").value,
+        autor: document.getElementById("updateAutor").value,
+        edicao: parseInt(document.getElementById("updateEdicao").value),
+        dataLancamento: document.getElementById("updateData").value,
+        preco: parseFloat(document.getElementById("updatePreco").value)
+      };
+      fetch(`${baseUrl}/${isbnAlvo}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(livroAtualizado)
+      })
+      .then(res => res.text())
+      .then(msg => document.getElementById("resultadoUpdate").textContent = msg)
+      .catch(err => document.getElementById("resultadoUpdate").textContent = "Erro: " + err);
+    }
+
+    function excluirLivro() {
+      const isbn = document.getElementById("deleteIsbn").value;
+      fetch(`${baseUrl}/${isbn}`, { method: "DELETE" })
+      .then(res => res.text())
+      .then(msg => document.getElementById("resultadoDelete").textContent = msg)
+      .catch(err => document.getElementById("resultadoDelete").textContent = "Erro: " + err);
+    }
+
+    function povoar() {
+      fetch(`${baseUrl}/povoar`, { method: "POST" })
+      .then(res => res.text())
+      .then(msg => document.getElementById("resultadoPovoar").textContent = msg)
+      .catch(err => document.getElementById("resultadoPovoar").textContent = "Erro: " + err);
+    }
+  </script>
+</body>
+</html>
