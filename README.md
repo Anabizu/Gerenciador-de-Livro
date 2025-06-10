@@ -10,3 +10,4 @@
 | O trabalho está completo?                                               | ✅ Sim           |
 | O trabalho é original e não é a cópia de um trabalho de um colega?      | ✅ Sim, é original |
 
+Para rodar a aplicação, é necessário abrir apenas a pasta "livros" no vs code ou em outra aplicação. No terminal você deve ir até essa pasta e digitar "./gradlew bootRun" e então ir até a página http://localhost:8081/ .
